@@ -1,20 +1,50 @@
 from django.db import models
 from month.models import MonthField
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from rest_framework.authtoken.models import Token
 
 
 # from django import forms
 # Create your models here.
+class MyAccountManager(BaseUserManager):
+    def create_user(self, email, username, password=None):
+        if not email:
+            raise ValueError('Users must have an email address')
+        if not username:
+            raise ValueError('Users must have a username')
+
+        user = self.model(
+            email=self.normalize_email(email),
+            username=username,
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+
 class Candidate(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=250)
     email = models.EmailField(max_length=254)
     # password = models.CharField(max_length=32,widget=forms.PasswordInput)
     password = models.CharField(max_length=32)
+    confirmpass = models.CharField(max_length=32, blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
+    is_email_verified = models.BooleanField(default=False)
 
+    objects = MyAccountManager()
     def __str__(self):
         return f"{self.id}-{self.name}"
 
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
 
 class Candidate_profile(models.Model):
     user_id = models.ForeignKey(Candidate, on_delete=models.CASCADE, related_name='user')
