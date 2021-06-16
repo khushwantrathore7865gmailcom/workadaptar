@@ -1,6 +1,6 @@
 from django.db import models
 from month.models import MonthField
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager,AbstractUser
 
 from django.conf import settings
 from django.db.models.signals import post_save
@@ -10,25 +10,11 @@ from rest_framework.authtoken.models import Token
 
 # from django import forms
 # Create your models here.
-class MyAccountManager(BaseUserManager):
-    def create_user(self, email, username, password=None):
-        if not email:
-            raise ValueError('Users must have an email address')
-        if not username:
-            raise ValueError('Users must have a username')
-
-        user = self.model(
-            email=self.normalize_email(email),
-            username=username,
-        )
-
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
 
 
-class Candidate(models.Model):
+class Candidate(AbstractUser):
     id = models.IntegerField(primary_key=True)
+    username = models.CharField(max_length=250,unique=True,null=True)
     name = models.CharField(max_length=250)
     email = models.EmailField(max_length=254)
     # password = models.CharField(max_length=32,widget=forms.PasswordInput)
@@ -37,7 +23,6 @@ class Candidate(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     is_email_verified = models.BooleanField(default=False)
 
-    objects = MyAccountManager()
     def __str__(self):
         return f"{self.id}-{self.name}"
 
